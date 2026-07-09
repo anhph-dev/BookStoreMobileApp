@@ -1,32 +1,35 @@
-require('dotenv').config();
 const admin = require('firebase-admin');
+require('dotenv').config();
 
-let bucket = null;
+try {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      // Xử lý ký tự xuống dòng của private key nếu bị lỗi định dạng chuỗi
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  });
 
-function hasFirebaseConfig() {
-  const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, FIREBASE_STORAGE_BUCKET } = process.env;
+  console.log('=== Firebase Admin SDK Initialized ===');
 
-  return [FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, FIREBASE_STORAGE_BUCKET].every((value) => value && !String(value).startsWith('your_') && !String(value).includes('...'));
-}
-
-if (hasFirebaseConfig() && !admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        project_id: process.env.FIREBASE_PROJECT_ID,
-        client_email: process.env.FIREBASE_CLIENT_EMAIL,
-        private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  // Hàm test kết nối thực tế tới Storage Bucket khi khởi động
+  const bucket = admin.storage().bucket();
+  bucket.getFiles({ maxResults: 1 })
+    .then(() => {
+      console.log('✅ Firebase Storage connection test: SUCCESS');
+    })
+    .catch((error) => {
+      console.error('❌ Firebase Storage connection test: FAILED');
+      console.error('Chi tiết lỗi:', error.message);
     });
 
-    bucket = admin.storage().bucket();
-  } catch (error) {
-    bucket = null;
-  }
+} catch (error) {
+  console.error('❌ Firebase Initialization Error:', error.message);
 }
 
 module.exports = {
   admin,
-  bucket,
+  bucket: admin.storage().bucket(),
 };

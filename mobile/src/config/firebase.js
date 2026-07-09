@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getStorage } from 'firebase/storage';
-import { getFirestore } from 'firebase/firestore';
+// Đổi getFirestore thành initializeFirestore
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'; 
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -12,15 +13,23 @@ const firebaseConfig = {
 };
 
 export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey
-  && firebaseConfig.authDomain
-  && firebaseConfig.projectId
-  && firebaseConfig.storageBucket
-  && firebaseConfig.messagingSenderId
-  && firebaseConfig.appId,
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.storageBucket &&
+  firebaseConfig.messagingSenderId &&
+  firebaseConfig.appId
 );
 
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 
 export const storage = app ? getStorage(app) : null;
-export const db = app ? getFirestore(app) : null;
+
+// CẤU HÌNH LẠI CHỖ NÀY ĐỂ BẬT TÍNH NĂNG OFFLINE CACHE (Tránh treo khi mất mạng)
+export const db = app 
+  ? initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    })
+  : null;
