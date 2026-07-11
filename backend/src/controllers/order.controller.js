@@ -1,13 +1,45 @@
 const { getPool, sql } = require('../config/db');
 const { withControllerLog } = require('../utils/controllerLogger');
 
+function parseDateBoundary(value, fallback, { endExclusive = false } = {}) {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return fallback;
+  }
+
+  // Date-only filters from the mobile form are user-facing inclusive dates;
+  // the SQL query uses an exclusive upper bound for stable paging.
+  if (endExclusive && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+    parsed.setDate(parsed.getDate() + 1);
+  }
+
+  return parsed;
+}
+
 async function createOrderHandler(req, res) {
   const pool = await getPool();
   const transaction = new sql.Transaction(pool);
 
   try {
-    const { recipientName, phoneNumber, email = null, shippingAddress, notes = null, cityId = null, wardId = null, paymentMethod, items = [] } = req.body;
+    const { recipientName, phoneNumber, shippingAddress, notes = null, cityId = null, wardId = null, paymentMethod, items = [] } = req.body;
+    let { email = null } = req.body;
     const userId = req.user.userId;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Giỏ hàng trống' });
+    }
+
+    if (!email) {
+      const userResult = await pool.request()
+        .input('userId', sql.Int, userId)
+        .query('SELECT TOP 1 Email FROM Users WHERE UserId = @userId');
+
+      email = userResult.recordset[0]?.Email || '';
+    }
 
     await transaction.begin();
 
@@ -28,7 +60,15 @@ async function createOrderHandler(req, res) {
         return res.status(400).json({ error: `Sản phẩm "${product.ProductName}" chỉ còn ${product.Stock} cuốn trong kho` });
       }
 
-      totalAmount += Number(item.quantity || 0) * Number(item.unitPrice || product.Price || 0);
+      const quantity = Number(item.quantity || 0);
+      const unitPrice = Number(item.unitPrice ?? item.price ?? product.Price ?? 0);
+
+      if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+        await transaction.rollback();
+        return res.status(400).json({ message: 'Dữ liệu sản phẩm trong giỏ hàng không hợp lệ' });
+      }
+
+      totalAmount += quantity * unitPrice;
     }
 
     const orderResult = await new sql.Request(transaction)
@@ -59,11 +99,13 @@ async function createOrderHandler(req, res) {
     const orderId = orderResult.recordset[0].OrderId;
 
     for (const item of items) {
+      const unitPrice = Number(item.unitPrice ?? item.price);
+
       await new sql.Request(transaction)
         .input('orderId', sql.Int, orderId)
         .input('productId', sql.Int, item.productId)
         .input('quantity', sql.Int, item.quantity)
-        .input('unitPrice', sql.Decimal(18, 2), item.unitPrice)
+        .input('unitPrice', sql.Decimal(18, 2), unitPrice)
         .query('INSERT INTO OrderDetails (OrderId, ProductId, Quantity, UnitPrice) VALUES (@orderId, @productId, @quantity, @unitPrice)');
 
       await new sql.Request(transaction)
@@ -75,7 +117,12 @@ async function createOrderHandler(req, res) {
     await transaction.commit();
     return res.status(201).json({ orderId, totalAmount, status: 'Pending' });
   } catch (error) {
-    await transaction.rollback();
+    console.error('Create order failed:', error);
+    try {
+      await transaction.rollback();
+    } catch (_rollbackError) {
+      // Transaction may not have started or may already be closed.
+    }
     return res.status(500).json({ message: 'Failed to create order' });
   }
 }
@@ -83,21 +130,82 @@ async function createOrderHandler(req, res) {
 async function getMyOrdersHandler(req, res) {
   try {
     const pool = await getPool();
-    const result = await pool.request()
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+    const status = req.query.status || null;
+    const search = req.query.search ? String(req.query.search).trim() : null;
+
+    // By default, the order list is scoped to the current month so the mobile
+    // screen stays fast and avoids pulling a full historical ledger.
+    const now = new Date();
+    const defaultDateFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const defaultDateTo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    const dateFrom = parseDateBoundary(req.query.dateFrom, defaultDateFrom);
+    const dateTo = parseDateBoundary(req.query.dateTo, defaultDateTo, { endExclusive: true });
+
+    const request = pool.request()
       .input('userId', sql.Int, req.user.userId)
-      .input('status', sql.NVarChar, req.query.status || null)
-      .query(`
-        SELECT o.*, c.CityName, w.WardName
-        FROM Orders o
-        LEFT JOIN Cities c ON o.CityId = c.CityId
-        LEFT JOIN Wards w ON o.WardId = w.WardId
-        WHERE o.UserId = @userId
-          AND (@status IS NULL OR o.Status = @status)
-        ORDER BY o.OrderDate DESC;
+      .input('status', sql.NVarChar, status)
+      .input('search', sql.NVarChar, search)
+      .input('dateFrom', sql.DateTime2, dateFrom)
+      .input('dateTo', sql.DateTime2, dateTo)
+      .input('page', sql.Int, page)
+      .input('limit', sql.Int, limit);
+
+    const result = await request.query(`
+        WITH FilteredOrders AS (
+          SELECT o.*, c.CityName, w.WardName
+          FROM Orders o
+          LEFT JOIN Cities c ON o.CityId = c.CityId
+          LEFT JOIN Wards w ON o.WardId = w.WardId
+          WHERE o.UserId = @userId
+            AND (@status IS NULL OR o.Status = @status)
+            AND o.OrderDate >= @dateFrom
+            AND o.OrderDate < @dateTo
+            AND (
+              @search IS NULL
+              OR CAST(o.OrderId AS NVARCHAR(20)) LIKE N'%' + @search + N'%'
+              OR o.RecipientName LIKE N'%' + @search + N'%'
+              OR o.PhoneNumber LIKE N'%' + @search + N'%'
+              OR o.Email LIKE N'%' + @search + N'%'
+            )
+        )
+        SELECT *
+        FROM FilteredOrders
+        ORDER BY OrderDate DESC
+        OFFSET (@page - 1) * @limit ROWS FETCH NEXT @limit ROWS ONLY;
+
+        WITH FilteredOrders AS (
+          SELECT o.OrderId
+          FROM Orders o
+          WHERE o.UserId = @userId
+            AND (@status IS NULL OR o.Status = @status)
+            AND o.OrderDate >= @dateFrom
+            AND o.OrderDate < @dateTo
+            AND (
+              @search IS NULL
+              OR CAST(o.OrderId AS NVARCHAR(20)) LIKE N'%' + @search + N'%'
+              OR o.RecipientName LIKE N'%' + @search + N'%'
+              OR o.PhoneNumber LIKE N'%' + @search + N'%'
+              OR o.Email LIKE N'%' + @search + N'%'
+            )
+        )
+        SELECT COUNT(*) AS total FROM FilteredOrders;
       `);
 
-    return res.json(result.recordset);
+    const total = result.recordsets[1]?.[0]?.total || 0;
+
+    return res.json({
+      orders: result.recordsets[0],
+      total,
+      page,
+      limit,
+      totalPages: Math.max(Math.ceil(total / limit), 1),
+      dateFrom: dateFrom.toISOString(),
+      dateTo: dateTo.toISOString(),
+    });
   } catch (error) {
+    console.error('Load orders failed:', error);
     return res.status(500).json({ message: 'Failed to load orders' });
   }
 }

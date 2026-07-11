@@ -78,6 +78,7 @@ async function loginHandler(req, res) {
         address: user.Address,
         cityId: user.CityId,
         wardId: user.WardId,
+        profileImageUrl: user.ProfileImageUrl,
       },
     });
   } catch (error) {
