@@ -90,7 +90,14 @@ async function getProductsHandler(req, res) {
       SELECT
         p.ProductId,
         p.ProductName,
+        p.ISBN,
         p.Author,
+        p.Publisher,
+        p.[Language],
+        p.[PageCount],
+        p.[Format],
+        p.[Edition],
+        p.[PublicationDate],
         p.Price,
         p.OriginalPrice,
         p.DiscountPercent,
@@ -219,6 +226,11 @@ async function createProductHandler(req, res) {
       .input('isbn', sql.NVarChar, payload.isbn || null)
       .input('author', sql.NVarChar, payload.author || null)
       .input('publisher', sql.NVarChar, payload.publisher || null)
+      .input('language', sql.NVarChar, payload.language || null)
+      .input('pageCount', sql.Int, intParam(payload.pageCount))
+      .input('format', sql.NVarChar, payload.format || null)
+      .input('edition', sql.NVarChar, payload.edition || null)
+      .input('publicationDate', sql.Date, payload.publicationDate || null)
       .input('price', sql.Decimal(18, 2), payload.price)
       .input('originalPrice', sql.Decimal(18, 2), payload.originalPrice || payload.price)
       .input('discountPercent', sql.Int, payload.discountPercent || 0)
@@ -233,14 +245,18 @@ async function createProductHandler(req, res) {
       .input('description', sql.NVarChar(sql.MAX), payload.description || null)
       .query(`
         INSERT INTO Products (
-          ProductName, ISBN, Author, Publisher, Price, OriginalPrice,
+          ProductName, ISBN, Author, Publisher, [Language], [PageCount],
+          [Format], [Edition], [PublicationDate],
+          Price, OriginalPrice,
           DiscountPercent, Stock, CategoryId, ImageUrl, AverageRating,
           ReviewCount, IsFeatured, IsNewArrival, IsBestSeller, IsAvailable,
           IsDiscontinued, ShortDescription, Description
         )
         OUTPUT INSERTED.ProductId
         VALUES (
-          @productName, @isbn, @author, @publisher, @price, @originalPrice,
+          @productName, @isbn, @author, @publisher, @language, @pageCount,
+          @format, @edition, @publicationDate,
+          @price, @originalPrice,
           @discountPercent, @stock, @categoryId, @imageUrl, 0,
           0, @isFeatured, @isNewArrival, @isBestSeller, @isAvailable,
           0, @shortDescription, @description
@@ -274,6 +290,11 @@ async function updateProductHandler(req, res) {
       .input('isbn', sql.NVarChar, payload.isbn || null)
       .input('author', sql.NVarChar, payload.author || null)
       .input('publisher', sql.NVarChar, payload.publisher || null)
+      .input('language', sql.NVarChar, payload.language || null)
+      .input('pageCount', sql.Int, intParam(payload.pageCount))
+      .input('format', sql.NVarChar, payload.format || null)
+      .input('edition', sql.NVarChar, payload.edition || null)
+      .input('publicationDate', sql.Date, payload.publicationDate || null)
       .input('price', sql.Decimal(18, 2), payload.price)
       .input('originalPrice', sql.Decimal(18, 2), payload.originalPrice || payload.price)
       .input('discountPercent', sql.Int, payload.discountPercent || 0)
@@ -292,6 +313,11 @@ async function updateProductHandler(req, res) {
           ISBN = @isbn,
           Author = @author,
           Publisher = @publisher,
+          [Language] = @language,
+          [PageCount] = @pageCount,
+          [Format] = @format,
+          [Edition] = @edition,
+          [PublicationDate] = @publicationDate,
           Price = @price,
           OriginalPrice = @originalPrice,
           DiscountPercent = @discountPercent,

@@ -1,0 +1,41 @@
+{
+  "name": "bookstoreapp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/nunito": "^0.4.2",
+    "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/bottom-tabs": "^7.18.8",
+    "@react-navigation/native": "^7.3.8",
+    "@react-navigation/native-stack": "^7.17.10",
+    "@react-navigation/stack": "^7.10.11",
+    "@reduxjs/toolkit": "^2.12.0",
+    "@stripe/stripe-react-native": "0.50.3",
+    "@tanstack/react-query": "^5.101.2",
+    "axios": "^1.18.1",
+    "expo": "~54.0.34",
+    "expo-image-picker": "~17.0.11",
+    "expo-splash-screen": "~31.0.13",
+    "expo-status-bar": "~3.0.9",
+    "firebase": "^12.15.0",
+    "react": "19.1.0",
+    "react-hook-form": "^7.81.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-toast-message": "^2.4.0",
+    "react-redux": "^9.3.0",
+    "redux-persist": "^6.0.0"
+  },
+  "private": true
+}

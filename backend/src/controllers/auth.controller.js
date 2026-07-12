@@ -5,7 +5,17 @@ const { withControllerLog } = require('../utils/controllerLogger');
 
 async function registerHandler(req, res) {
   try {
-    const { fullName, email, password, phoneNumber, address = null, cityId = null, wardId = null } = req.body;
+    const { fullName, email, password, phoneNumber, cityId = null, wardId = null } = req.body;
+    const address = String(req.body.address || '').trim();
+
+    if (!address) {
+      return res.status(400).json({ message: 'Vui lòng nhập địa chỉ cụ thể' });
+    }
+
+    if (!cityId || !wardId) {
+      return res.status(400).json({ message: 'Vui lòng chọn tỉnh/thành phố và phường/xã' });
+    }
+
     const pool = await getPool();
 
     // Kiểm tra email trùng trước để trả về thông báo thân thiện cho ứng dụng mobile.

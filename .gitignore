@@ -4,5 +4,7 @@ node_modules/
 **/*.env
 **/dist/
 **/build/
+.git-backups/
+*.zip
 .DS_Store
 Thumbs.db
