@@ -5,7 +5,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import { StyleSheet, Text, View } from 'react-native';
-
 import HomeScreen from '../screens/home/HomeScreen';
 import SearchScreen from '../screens/home/SearchScreen';
 import ProductDetailScreen from '../screens/product/ProductDetailScreen';
@@ -17,127 +16,60 @@ import OrderDetailScreen from '../screens/order/OrderDetailScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import ProductManageScreen from '../screens/admin/ProductManageScreen';
 import ProductFormScreen from '../screens/admin/ProductFormScreen';
+import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
+import AdminOrderScreen from '../screens/admin/AdminOrderScreen';
+import CustomerManageScreen from '../screens/admin/CustomerManageScreen';
+import CustomerDetailScreen from '../screens/admin/CustomerDetailScreen';
+import SaleOrderListScreen from '../screens/sale/SaleOrderListScreen';
+import SaleCreateOrderScreen from '../screens/sale/SaleCreateOrderScreen';
+import NVKhoOrderScreen from '../screens/warehouse/NVKhoOrderScreen';
+import InventoryScreen from '../screens/warehouse/InventoryScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import { COLORS } from '../constants/theme';
-import AppButton from '../components/common/AppButton';
 
-const RootStack = createNativeStackNavigator();
-const HomeStack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Root = createNativeStackNavigator(); const Stack = createNativeStackNavigator(); const Tab = createBottomTabNavigator();
+const stackOptions = { headerShown: false };
+function HomeStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="Home" component={HomeScreen} /><Stack.Screen name="Search" component={SearchScreen} /><Stack.Screen name="ProductDetail" component={ProductDetailScreen} /></Stack.Navigator>; }
+function SearchStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="SearchList" component={SearchScreen} /><Stack.Screen name="ProductDetail" component={ProductDetailScreen} /></Stack.Navigator>; }
+function OrderStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="OrderHistoryList" component={OrderHistoryScreen} /><Stack.Screen name="OrderDetail" component={OrderDetailScreen} /></Stack.Navigator>; }
+function CustomerStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="CustomerManage" component={CustomerManageScreen} /><Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} /></Stack.Navigator>; }
+function ProductStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="ProductManageList" component={ProductManageScreen} /><Stack.Screen name="ProductForm" component={ProductFormScreen} /></Stack.Navigator>; }
+function SaleStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="SaleOrderList" component={SaleOrderListScreen} /><Stack.Screen name="SaleCreateOrder" component={SaleCreateOrderScreen} /></Stack.Navigator>; }
 
-function HomeStackNavigator() {
-  return (
-    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-      <HomeStack.Screen name="Home" component={HomeScreen} />
-      <HomeStack.Screen name="Search" component={SearchScreen} />
-      <HomeStack.Screen name="ProductDetail" component={ProductDetailScreen} />
-    </HomeStack.Navigator>
-  );
-}
-
-function LoginPromptScreen({ navigation, route }) {
-  return (
-    <View style={styles.guestGate}>
-      <Ionicons name="person-circle-outline" size={64} color={COLORS.primary} />
-      <Text style={styles.guestTitle}>Đăng nhập để tiếp tục</Text>
-      <Text style={styles.guestSubtitle}>Một số tính năng chỉ mở khi bạn có tài khoản.</Text>
-      <AppButton label="Đăng nhập" onPress={() => navigation.navigate('Login', { returnTo: route?.name })} fullWidth />
-      <AppButton label="Đăng ký" onPress={() => navigation.navigate('Register', { returnTo: route?.name })} variant="outline" fullWidth />
-    </View>
-  );
-}
+const roleTabs = {
+  Admin: [
+    ['Dashboard', AdminDashboardScreen, 'bar-chart', 'Dashboard'], ['AdminOrders', AdminOrderScreen, 'receipt', 'Đơn hàng'],
+    ['Customers', CustomerStack, 'people', 'Khách hàng'], ['Products', ProductStack, 'book', 'Sản phẩm'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
+  ],
+  Sale: [
+    ['SaleOrders', SaleStack, 'storefront', 'Bán hàng'], ['Products', SearchStack, 'book', 'Sản phẩm'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
+  ],
+  NVKho: [
+    ['Products', ProductStack, 'book', 'Sản phẩm'], ['WarehouseOrders', NVKhoOrderScreen, 'receipt', 'Đơn hàng'],
+    ['Inventory', InventoryScreen, 'cube', 'Kho'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
+  ],
+};
 
 function MainTabs() {
-  const totalCount = useSelector((state) => state.cart.totalCount);
-  const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
-
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.gray,
-        tabBarStyle: {
-          backgroundColor: COLORS.white,
-          borderTopColor: COLORS.border,
-          height: 60,
-        },
-        tabBarIcon: ({ color, size }) => {
-          const icons = {
-            HomeTab: 'home-outline',
-            SearchTab: 'search-outline',
-            CartTab: 'cart-outline',
-            OrderTab: 'receipt-outline',
-            ProfileTab: 'person-outline',
-          };
-          return <Ionicons name={icons[route.name] || 'ellipse-outline'} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tab.Screen name="HomeTab" component={HomeStackNavigator} options={{ title: 'Trang chủ' }} />
-      <Tab.Screen name="SearchTab" component={SearchScreen} options={{ title: 'Tìm kiếm' }} />
-      <Tab.Screen
-        name="CartTab"
-        component={CartScreen}
-        options={{
-          title: 'Giỏ hàng',
-          tabBarBadge: totalCount > 0 ? totalCount : undefined,
-        }}
-      />
-      <Tab.Screen
-        name="OrderTab"
-        component={isLoggedIn ? OrderHistoryScreen : LoginPromptScreen}
-        options={{ title: 'Đơn hàng' }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={isLoggedIn ? ProfileScreen : LoginPromptScreen}
-        options={{ title: 'Tài khoản' }}
-      />
-    </Tab.Navigator>
-  );
+  const { user, isLoggedIn } = useSelector((s) => s.auth); const totalCount = useSelector((s) => s.cart.totalCount);
+  const tabs = roleTabs[user?.role] || [
+    ['HomeTab', HomeStack, 'home', 'Trang chủ'], ['SearchTab', SearchStack, 'search', 'Tìm kiếm'], ['CartTab', CartScreen, 'cart', 'Giỏ hàng'],
+    ['OrderTab', OrderStack, 'receipt', 'Đơn hàng'], ['ProfileTab', ProfileScreen, 'person', 'Tài khoản'],
+  ];
+  return <Tab.Navigator screenOptions={({ route }) => ({ headerShown: false, tabBarActiveTintColor: COLORS.primary, tabBarInactiveTintColor: COLORS.gray,
+    tabBarStyle: { backgroundColor: COLORS.white, borderTopColor: COLORS.border, height: 62 },
+    tabBarIcon: ({ focused, color }) => { const tab = tabs.find((x) => x[0] === route.name); const icon = `${tab?.[2] || 'ellipse'}${focused ? '' : '-outline'}`; return <View><Ionicons name={icon} size={24} color={color} />
+      {route.name === 'CartTab' && totalCount > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{totalCount > 99 ? '99+' : totalCount}</Text></View>}</View>; },
+  })}>
+    {tabs.map(([name, component, , title]) => <Tab.Screen key={name} name={name} component={component} options={{ title }}
+      listeners={({ navigation }) => ({ tabPress: (event) => { if (!isLoggedIn && ['OrderTab', 'ProfileTab'].includes(name)) { event.preventDefault(); navigation.getParent()?.navigate('Login', { returnTo: name }); } } })} />)}
+  </Tab.Navigator>;
 }
-
 export default function AppNavigator() {
-  return (
-    <NavigationContainer>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen name="Main" component={MainTabs} />
-        <RootStack.Screen name="Login" component={LoginScreen} />
-        <RootStack.Screen name="Register" component={RegisterScreen} />
-        <RootStack.Screen name="ProductDetail" component={ProductDetailScreen} />
-        <RootStack.Screen name="Checkout" component={CheckoutScreen} />
-        <RootStack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
-        <RootStack.Screen name="OrderHistory" component={OrderHistoryScreen} />
-        <RootStack.Screen name="OrderDetail" component={OrderDetailScreen} />
-        <RootStack.Screen name="ProductManage" component={ProductManageScreen} />
-        <RootStack.Screen name="ProductForm" component={ProductFormScreen} />
-      </RootStack.Navigator>
-    </NavigationContainer>
-  );
+  return <NavigationContainer><Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} /><Root.Screen name="Login" component={LoginScreen} /><Root.Screen name="Register" component={RegisterScreen} />
+    <Root.Screen name="ProductDetail" component={ProductDetailScreen} /><Root.Screen name="Checkout" component={CheckoutScreen} /><Root.Screen name="OrderSuccess" component={OrderSuccessScreen} />
+    <Root.Screen name="OrderHistory" component={OrderHistoryScreen} /><Root.Screen name="OrderDetail" component={OrderDetailScreen} /><Root.Screen name="ProductManage" component={ProductManageScreen} /><Root.Screen name="ProductForm" component={ProductFormScreen} />
+  </Root.Navigator></NavigationContainer>;
 }
-
-const styles = StyleSheet.create({
-  guestGate: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-  },
-  guestTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 20,
-    color: COLORS.dark,
-    textAlign: 'center',
-  },
-  guestSubtitle: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: COLORS.gray,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-});
+const styles = StyleSheet.create({ badge: { position: 'absolute', right: -13, top: -7, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: COLORS.error, alignItems: 'center', justifyContent: 'center' }, badgeText: { color: COLORS.white, fontSize: 9, fontWeight: '700' } });
