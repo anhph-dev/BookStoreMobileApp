@@ -1,8 +1,9 @@
 import React from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { COLORS, FONTS, SHADOWS, SIZES } from '../../constants/theme';
 import { useServices } from '../../hooks/useServices';
@@ -15,13 +16,27 @@ const getValue = (source, camelKey, pascalKey) => source?.[camelKey] ?? source?.
 export default function OrderDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { orderService } = useServices();
+  const { orderService, adminService } = useServices();
+  const role = useSelector((state) => state.auth.user?.role);
+  const queryClient = useQueryClient();
   const orderId = route.params?.orderId;
 
   const orderQuery = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => orderService.getOrderById(orderId),
     enabled: Boolean(orderId),
+  });
+  const statusMutation = useMutation({
+    mutationFn: (nextStatus) => adminService.updateOrderStatus(orderId, nextStatus),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['order', orderId] }),
+        queryClient.invalidateQueries({ queryKey: ['sale-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['nvkho-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-orders'] }),
+      ]);
+    },
+    onError: (error) => Alert.alert('Không thể cập nhật', error?.response?.data?.message || 'Vui lòng thử lại.'),
   });
 
   const order = orderQuery.data;
@@ -47,6 +62,28 @@ export default function OrderDetailScreen() {
   const paymentMethod = getValue(order, 'paymentMethod', 'PaymentMethod');
   const paymentStatus = getValue(order, 'paymentStatus', 'PaymentStatus');
   const paidAt = getValue(order, 'paidAt', 'PaidAt');
+  const nextStatus = role === 'Sale' && status === 'Pending'
+    ? 'Confirmed'
+    : role === 'NVKho' && status === 'Confirmed'
+      ? 'Shipping'
+      : role === 'NVKho' && status === 'Shipping'
+        ? 'Shipped'
+        : null;
+  const actionLabel = nextStatus === 'Confirmed'
+    ? 'Xác nhận đơn hàng'
+    : nextStatus === 'Shipping'
+      ? 'Bắt đầu giao hàng'
+      : nextStatus === 'Shipped'
+        ? 'Xác nhận đã giao'
+        : '';
+  const confirmStatusUpdate = () => Alert.alert(
+    actionLabel,
+    `Bạn đã kiểm tra đầy đủ thông tin đơn #${orderId}?`,
+    [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Xác nhận', onPress: () => statusMutation.mutate(nextStatus) },
+    ],
+  );
 
   return (
     <View style={styles.container}>
@@ -137,7 +174,13 @@ export default function OrderDetailScreen() {
           ) : null}
         </View>
 
-        <View style={styles.actions}>
+        {role !== 'Customer' ? (
+          <View style={styles.actions}>
+            {nextStatus ? <AppButton label={statusMutation.isPending ? 'Đang cập nhật...' : actionLabel} onPress={confirmStatusUpdate} disabled={statusMutation.isPending} fullWidth /> : null}
+            <AppButton label="Quay lại danh sách đơn" onPress={() => navigation.goBack()} variant="outline" fullWidth />
+          </View>
+        ) : null}
+        <View style={[styles.actions, role !== 'Customer' && styles.hidden]}>
           <AppButton label="Về danh sách đơn" onPress={() => navigation.navigate('OrderHistory')} variant="outline" fullWidth />
           <AppButton label="Tiếp tục mua sách" onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] })} fullWidth />
         </View>
@@ -203,4 +246,5 @@ const styles = StyleSheet.create({
   infoLabel: { fontFamily: FONTS.regular, color: COLORS.gray },
   infoValue: { fontFamily: FONTS.medium, color: COLORS.dark, textAlign: 'right', flex: 1 },
   actions: { gap: 10 },
+  hidden: { display: 'none' },
 });
