@@ -277,9 +277,11 @@ async function updateProductHandler(req, res) {
 
     const current = await pool.request()
       .input('id', sql.Int, productId)
-      .query('SELECT TOP 1 ImageUrl FROM Products WHERE ProductId = @id');
+      .query('SELECT TOP 1 ImageUrl, DiscountPercent FROM Products WHERE ProductId = @id');
 
-    let imageUrl = current.recordset[0]?.ImageUrl || null;
+    const oldProduct = current.recordset[0];
+    if (!oldProduct) return res.status(404).json({ message: 'Product not found' });
+    let imageUrl = oldProduct.ImageUrl || null;
     if (req.file) {
       imageUrl = await buildImageUrl(req.file);
     }

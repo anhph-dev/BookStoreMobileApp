@@ -220,7 +220,13 @@ async function getOrderByIdHandler(req, res) {
       .query('SELECT TOP 1 * FROM Orders WHERE OrderId = @orderId');
 
     const order = orderResult.recordset[0];
-    if (!order || order.UserId !== req.user.userId) {
+    const canRead = order && (
+      req.user.role === 'Admin'
+      || req.user.role === 'NVKho'
+      || (req.user.role === 'Sale' && (order.Channel === 'Online' || order.AppUserId === req.user.userId))
+      || (req.user.role === 'Customer' && order.UserId === req.user.userId)
+    );
+    if (!canRead) {
       return res.status(404).json({ message: 'Order not found' });
     }
 

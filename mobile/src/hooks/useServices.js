@@ -6,6 +6,8 @@ import createProductService from '../services/productService';
 import createOrderService from '../services/orderService';
 import createUserService from '../services/userService';
 import createPaymentService from '../services/paymentService';
+import createAdminService from '../services/adminService';
+import createWarehouseService from '../services/warehouseService';
 
 export function useServices() {
   const store = useStore();
@@ -16,5 +18,7 @@ export function useServices() {
     orderService: createOrderService(store),
     userService: createUserService(store),
     paymentService: createPaymentService(store),
+    adminService: createAdminService(store),
+    warehouseService: createWarehouseService(store),
   }), [store]);
 }

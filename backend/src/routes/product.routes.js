@@ -12,6 +12,6 @@ router.get('/meta/cities/:id/wards', productController.getWardsByCity);
 router.get('/:id', productController.getProductById);
 router.post('/', verifyToken, requireRole('Admin', 'NVKho'), upload.single('image'), productController.createProduct);
 router.put('/:id', verifyToken, requireRole('Admin', 'NVKho'), upload.single('image'), productController.updateProduct);
-router.delete('/:id', verifyToken, requireRole('Admin'), productController.deleteProduct);
+router.delete('/:id', verifyToken, requireRole('Admin', 'NVKho'), productController.deleteProduct);
 
 module.exports = router;
