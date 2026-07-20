@@ -22,8 +22,10 @@ import CustomerManageScreen from '../screens/admin/CustomerManageScreen';
 import CustomerDetailScreen from '../screens/admin/CustomerDetailScreen';
 import SaleOrderListScreen from '../screens/sale/SaleOrderListScreen';
 import SaleCreateOrderScreen from '../screens/sale/SaleCreateOrderScreen';
+import SaleCustomerSearchScreen from '../screens/sale/SaleCustomerSearchScreen';
 import NVKhoOrderScreen from '../screens/warehouse/NVKhoOrderScreen';
 import InventoryScreen from '../screens/warehouse/InventoryScreen';
+import RoleDashboardScreen from '../screens/staff/RoleDashboardScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import { COLORS } from '../constants/theme';
@@ -37,6 +39,8 @@ function OrderStack() { return <Stack.Navigator screenOptions={stackOptions}><St
 function CustomerStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="CustomerManage" component={CustomerManageScreen} /><Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} /></Stack.Navigator>; }
 function ProductStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="ProductManageList" component={ProductManageScreen} /><Stack.Screen name="ProductForm" component={ProductFormScreen} /></Stack.Navigator>; }
 function SaleStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="SaleOrderList" component={SaleOrderListScreen} /><Stack.Screen name="SaleCreateOrder" component={SaleCreateOrderScreen} /></Stack.Navigator>; }
+function SaleDashboard() { return <RoleDashboardScreen role="Sale" />; }
+function WarehouseDashboard() { return <RoleDashboardScreen role="NVKho" />; }
 
 const roleTabs = {
   Admin: [
@@ -44,11 +48,12 @@ const roleTabs = {
     ['Customers', CustomerStack, 'people', 'Khách hàng'], ['Products', ProductStack, 'book', 'Sản phẩm'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
   ],
   Sale: [
-    ['SaleOrders', SaleStack, 'storefront', 'Bán hàng'], ['Products', SearchStack, 'book', 'Sản phẩm'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
+    ['SaleDashboard', SaleDashboard, 'speedometer', 'Tổng quan'], ['SaleOrders', SaleStack, 'storefront', 'Bán hàng'],
+    ['Customers', SaleCustomerSearchScreen, 'people', 'Khách hàng'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
   ],
   NVKho: [
-    ['Products', ProductStack, 'book', 'Sản phẩm'], ['WarehouseOrders', NVKhoOrderScreen, 'receipt', 'Đơn hàng'],
-    ['Inventory', InventoryScreen, 'cube', 'Kho'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
+    ['WarehouseDashboard', WarehouseDashboard, 'speedometer', 'Tổng quan'], ['WarehouseOrders', NVKhoOrderScreen, 'receipt', 'Xử lý đơn'],
+    ['Inventory', InventoryScreen, 'cube', 'Tồn kho'], ['Products', ProductStack, 'book', 'Sản phẩm'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
   ],
 };
 
