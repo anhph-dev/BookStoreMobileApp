@@ -24,6 +24,14 @@ export const createUserService = (store) => {
       const response = await client.put('/api/users/me/password', payload);
       return response.data;
     },
+    async updateFcmToken(fcmToken) {
+      const response = await client.put('/api/users/me/fcm-token', { fcmToken });
+      return response.data;
+    },
+    async deleteFcmToken() {
+      const response = await client.delete('/api/users/me/fcm-token');
+      return response.data;
+    },
   };
 };
 

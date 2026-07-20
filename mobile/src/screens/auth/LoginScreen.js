@@ -11,6 +11,7 @@ import AppInput from '../../components/common/AppInput';
 import { setCredentials } from '../../store/slices/authSlice';
 import { mergeCartOnLogin } from '../../services/cartSyncService';
 import { useServices } from '../../hooks/useServices';
+import { registerForPushNotifications } from '../../services/notificationService';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -67,6 +68,8 @@ export default function LoginScreen() {
     try {
       const response = await authService.login(values);
       dispatch(setCredentials(response));
+      registerForPushNotifications()
+        .catch((error) => console.warn('Push registration failed', error));
 
       try {
         await mergeCartOnLogin(response.user.userId, dispatch);

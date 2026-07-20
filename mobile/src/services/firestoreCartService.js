@@ -1,7 +1,10 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
-const FIRESTORE_CART_TIMEOUT_MS = 2500;
+// A cold Firestore WebChannel connection on an Android emulator can take
+// several seconds (DNS, TLS and long-polling detection). Avoid treating that
+// normal startup cost as an unavailable database.
+const FIRESTORE_CART_TIMEOUT_MS = 10000;
 
 const isFirestoreUnavailable = () => !db;
 

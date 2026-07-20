@@ -173,9 +173,43 @@ async function updateAvatarHandler(req, res) {
   }
 }
 
+async function updateFcmTokenHandler(req, res) {
+  const fcmToken = typeof req.body.fcmToken === 'string' ? req.body.fcmToken.trim() : '';
+  if (!fcmToken) {
+    return res.status(400).json({ message: 'fcmToken is required' });
+  }
+
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('userId', sql.Int, req.user.userId)
+      .input('fcmToken', sql.NVarChar(512), fcmToken)
+      .query('UPDATE Users SET FcmToken = @fcmToken WHERE UserId = @userId');
+    return res.json({ message: 'Token updated' });
+  } catch (error) {
+    console.error('Update FCM token failed:', error);
+    return res.status(500).json({ message: 'Failed to update FCM token' });
+  }
+}
+
+async function deleteFcmTokenHandler(req, res) {
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('userId', sql.Int, req.user.userId)
+      .query('UPDATE Users SET FcmToken = NULL WHERE UserId = @userId');
+    return res.json({ message: 'Token deleted' });
+  } catch (error) {
+    console.error('Delete FCM token failed:', error);
+    return res.status(500).json({ message: 'Failed to delete FCM token' });
+  }
+}
+
 module.exports = {
   getMe: withControllerLog('user.getMe', getMeHandler),
   updateMe: withControllerLog('user.updateMe', updateMeHandler),
   updatePassword: withControllerLog('user.updatePassword', updatePasswordHandler),
   updateAvatar: withControllerLog('user.updateAvatar', updateAvatarHandler),
+  updateFcmToken: withControllerLog('user.updateFcmToken', updateFcmTokenHandler),
+  deleteFcmToken: withControllerLog('user.deleteFcmToken', deleteFcmTokenHandler),
 };

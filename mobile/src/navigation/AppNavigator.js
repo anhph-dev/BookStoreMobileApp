@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +29,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import { COLORS } from '../constants/theme';
 
 const Root = createNativeStackNavigator(); const Stack = createNativeStackNavigator(); const Tab = createBottomTabNavigator();
+export const navigationRef = createNavigationContainerRef();
 const stackOptions = { headerShown: false };
 function HomeStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="Home" component={HomeScreen} /><Stack.Screen name="Search" component={SearchScreen} /><Stack.Screen name="ProductDetail" component={ProductDetailScreen} /></Stack.Navigator>; }
 function SearchStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="SearchList" component={SearchScreen} /><Stack.Screen name="ProductDetail" component={ProductDetailScreen} /></Stack.Navigator>; }
@@ -67,7 +68,7 @@ function MainTabs() {
   </Tab.Navigator>;
 }
 export default function AppNavigator() {
-  return <NavigationContainer><Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} /><Root.Screen name="Login" component={LoginScreen} /><Root.Screen name="Register" component={RegisterScreen} />
+  return <NavigationContainer ref={navigationRef}><Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} /><Root.Screen name="Login" component={LoginScreen} /><Root.Screen name="Register" component={RegisterScreen} />
     <Root.Screen name="ProductDetail" component={ProductDetailScreen} /><Root.Screen name="Checkout" component={CheckoutScreen} /><Root.Screen name="OrderSuccess" component={OrderSuccessScreen} />
     <Root.Screen name="OrderHistory" component={OrderHistoryScreen} /><Root.Screen name="OrderDetail" component={OrderDetailScreen} /><Root.Screen name="ProductManage" component={ProductManageScreen} /><Root.Screen name="ProductForm" component={ProductFormScreen} />
   </Root.Navigator></NavigationContainer>;

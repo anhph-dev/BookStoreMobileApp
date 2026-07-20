@@ -3,6 +3,10 @@ const path = require('path');
 const { getPool, sql } = require('../config/db');
 const { bucket } = require('../config/firebase');
 const { withControllerLog } = require('../utils/controllerLogger');
+const {
+  broadcastToAllCustomers,
+  PRODUCT_NOTIFICATIONS,
+} = require('../services/notificationService');
 
 function boolParam(value) {
   if (value === undefined || value === null || value === '') {
@@ -263,6 +267,11 @@ async function createProductHandler(req, res) {
         );
       `);
 
+    if (boolParam(payload.isNewArrival) === true) {
+      broadcastToAllCustomers(PRODUCT_NOTIFICATIONS.newArrival(payload.productName))
+        .catch((error) => console.error('New arrival notification failed:', error));
+    }
+
     return res.status(201).json({ productId: result.recordset[0].ProductId, message: 'Thêm sản phẩm thành công' });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to create product' });
@@ -334,6 +343,13 @@ async function updateProductHandler(req, res) {
           Description = @description
         WHERE ProductId = @id;
       `);
+
+    const newDiscount = intParam(payload.discountPercent) || 0;
+    const oldDiscount = Number(oldProduct.DiscountPercent) || 0;
+    if (newDiscount > oldDiscount && newDiscount > 0) {
+      broadcastToAllCustomers(PRODUCT_NOTIFICATIONS.discount(payload.productName, newDiscount))
+        .catch((error) => console.error('Discount notification failed:', error));
+    }
 
     return res.json({ message: 'Cập nhật thành công' });
   } catch (error) {
