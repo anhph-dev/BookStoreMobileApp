@@ -1,5 +1,6 @@
 const { getPool, sql } = require('../config/db');
 const { withControllerLog } = require('../utils/controllerLogger');
+const { sendToUser, ORDER_NOTIFICATIONS } = require('../services/notificationService');
 
 const clean = (value) => {
   const result = String(value ?? '').trim();
@@ -180,7 +181,13 @@ async function updateOrderStatusHandler(req, res) {
       .input('current', sql.NVarChar, current).input('status', sql.NVarChar, status)
       .query('UPDATE Orders SET Status = @status OUTPUT INSERTED.OrderId, INSERTED.Status, INSERTED.UserId WHERE OrderId = @id AND Status = @current');
     if (!result.recordset[0]) return res.status(409).json({ message: 'Trạng thái đơn hàng vừa thay đổi, vui lòng tải lại' });
-    return res.json({ message: 'Cập nhật trạng thái thành công', ...result.recordset[0] });
+    const updatedOrder = result.recordset[0];
+    const notification = ORDER_NOTIFICATIONS[updatedOrder.Status];
+    if (notification && updatedOrder.UserId) {
+      sendToUser(updatedOrder.UserId, notification(updatedOrder.OrderId))
+        .catch((error) => console.error('Order notification failed:', error));
+    }
+    return res.json({ message: 'Cập nhật trạng thái thành công', ...updatedOrder });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to update order status' });
   }

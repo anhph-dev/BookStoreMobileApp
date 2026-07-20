@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,13 +22,16 @@ import CustomerManageScreen from '../screens/admin/CustomerManageScreen';
 import CustomerDetailScreen from '../screens/admin/CustomerDetailScreen';
 import SaleOrderListScreen from '../screens/sale/SaleOrderListScreen';
 import SaleCreateOrderScreen from '../screens/sale/SaleCreateOrderScreen';
+import SaleCustomerSearchScreen from '../screens/sale/SaleCustomerSearchScreen';
 import NVKhoOrderScreen from '../screens/warehouse/NVKhoOrderScreen';
 import InventoryScreen from '../screens/warehouse/InventoryScreen';
+import RoleDashboardScreen from '../screens/staff/RoleDashboardScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import { COLORS } from '../constants/theme';
 
 const Root = createNativeStackNavigator(); const Stack = createNativeStackNavigator(); const Tab = createBottomTabNavigator();
+export const navigationRef = createNavigationContainerRef();
 const stackOptions = { headerShown: false };
 function HomeStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="Home" component={HomeScreen} /><Stack.Screen name="Search" component={SearchScreen} /><Stack.Screen name="ProductDetail" component={ProductDetailScreen} /></Stack.Navigator>; }
 function SearchStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="SearchList" component={SearchScreen} /><Stack.Screen name="ProductDetail" component={ProductDetailScreen} /></Stack.Navigator>; }
@@ -36,6 +39,8 @@ function OrderStack() { return <Stack.Navigator screenOptions={stackOptions}><St
 function CustomerStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="CustomerManage" component={CustomerManageScreen} /><Stack.Screen name="CustomerDetail" component={CustomerDetailScreen} /></Stack.Navigator>; }
 function ProductStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="ProductManageList" component={ProductManageScreen} /><Stack.Screen name="ProductForm" component={ProductFormScreen} /></Stack.Navigator>; }
 function SaleStack() { return <Stack.Navigator screenOptions={stackOptions}><Stack.Screen name="SaleOrderList" component={SaleOrderListScreen} /><Stack.Screen name="SaleCreateOrder" component={SaleCreateOrderScreen} /></Stack.Navigator>; }
+function SaleDashboard() { return <RoleDashboardScreen role="Sale" />; }
+function WarehouseDashboard() { return <RoleDashboardScreen role="NVKho" />; }
 
 const roleTabs = {
   Admin: [
@@ -43,11 +48,12 @@ const roleTabs = {
     ['Customers', CustomerStack, 'people', 'Khách hàng'], ['Products', ProductStack, 'book', 'Sản phẩm'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
   ],
   Sale: [
-    ['SaleOrders', SaleStack, 'storefront', 'Bán hàng'], ['Products', SearchStack, 'book', 'Sản phẩm'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
+    ['SaleDashboard', SaleDashboard, 'speedometer', 'Tổng quan'], ['SaleOrders', SaleStack, 'storefront', 'Bán hàng'],
+    ['Customers', SaleCustomerSearchScreen, 'people', 'Khách hàng'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
   ],
   NVKho: [
-    ['Products', ProductStack, 'book', 'Sản phẩm'], ['WarehouseOrders', NVKhoOrderScreen, 'receipt', 'Đơn hàng'],
-    ['Inventory', InventoryScreen, 'cube', 'Kho'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
+    ['WarehouseDashboard', WarehouseDashboard, 'speedometer', 'Tổng quan'], ['WarehouseOrders', NVKhoOrderScreen, 'receipt', 'Xử lý đơn'],
+    ['Inventory', InventoryScreen, 'cube', 'Tồn kho'], ['Products', ProductStack, 'book', 'Sản phẩm'], ['Profile', ProfileScreen, 'person', 'Tài khoản'],
   ],
 };
 
@@ -67,7 +73,7 @@ function MainTabs() {
   </Tab.Navigator>;
 }
 export default function AppNavigator() {
-  return <NavigationContainer><Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} /><Root.Screen name="Login" component={LoginScreen} /><Root.Screen name="Register" component={RegisterScreen} />
+  return <NavigationContainer ref={navigationRef}><Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} /><Root.Screen name="Login" component={LoginScreen} /><Root.Screen name="Register" component={RegisterScreen} />
     <Root.Screen name="ProductDetail" component={ProductDetailScreen} /><Root.Screen name="Checkout" component={CheckoutScreen} /><Root.Screen name="OrderSuccess" component={OrderSuccessScreen} />
     <Root.Screen name="OrderHistory" component={OrderHistoryScreen} /><Root.Screen name="OrderDetail" component={OrderDetailScreen} /><Root.Screen name="ProductManage" component={ProductManageScreen} /><Root.Screen name="ProductForm" component={ProductFormScreen} />
   </Root.Navigator></NavigationContainer>;

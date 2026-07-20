@@ -16,6 +16,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.hsu.anhph.bookstoreapp.mobile",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -27,12 +29,20 @@
     },
     "plugins": [
       [
+        "expo-notifications",
+        {
+          "color": "#8B5E3C",
+          "defaultChannel": "default"
+        }
+      ],
+      [
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.bookstoreapp",
           "enableGooglePay": true
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

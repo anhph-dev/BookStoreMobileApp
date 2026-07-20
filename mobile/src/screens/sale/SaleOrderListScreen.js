@@ -1,80 +1,17 @@
-import React, { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
 import { useSelector } from 'react-redux';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { useNavigation } from '@react-navigation/native';
-import { COLORS, FONTS, SHADOWS } from '../../constants/theme';
-import { useServices } from '../../hooks/useServices';
-import { firstName, formatCurrency, formatDateTime } from '../../utils/formatters';
-import OrderStatusBadge from '../../components/order/OrderStatusBadge';
-
-const filters = [['', 'Tất cả'], ['Pending', 'Chờ xử lý'], ['Confirmed', 'Đã xác nhận']];
+import { firstName } from '../../utils/formatters';
+import StaffOrderList from '../../components/order/StaffOrderList';
 
 export default function SaleOrderListScreen() {
-  const [status, setStatus] = useState('');
-  const navigation = useNavigation();
   const user = useSelector((state) => state.auth.user);
-  const { adminService } = useServices();
-  const query = useInfiniteQuery({
-    queryKey: ['sale-orders', status],
-    initialPageParam: 1,
-    queryFn: ({ pageParam }) => adminService.getOrders({ status: status || undefined, page: pageParam, limit: 15 }),
-    getNextPageParam: (last) => last.page < last.totalPages ? last.page + 1 : undefined,
-  });
-  const orders = query.data?.pages.flatMap((page) => page.orders) || [];
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Đơn hàng - Sale</Text>
-      <Text style={styles.sub}>Xin chào, {firstName(user?.fullName)}</Text>
-      <View style={styles.tabs}>
-        {filters.map(([key, label]) => (
-          <Pressable key={key} onPress={() => setStatus(key)} style={[styles.tab, status === key && styles.active]}>
-            <Text style={[styles.tabText, status === key && styles.activeText]}>{label}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <FlatList
-        data={orders}
-        keyExtractor={(item) => String(item.OrderId)}
-        contentContainerStyle={styles.list}
-        onEndReached={() => query.hasNextPage && query.fetchNextPage()}
-        renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => navigation.navigate('OrderDetail', { orderId: item.OrderId })}>
-            <View style={styles.row}><Text style={styles.id}>#{item.OrderId}</Text><OrderStatusBadge status={item.Status} /></View>
-            <Text style={styles.meta}>{formatDateTime(item.OrderDate)}</Text>
-            <Text style={styles.name}>{item.RecipientName}</Text>
-            <Text style={styles.money}>{formatCurrency(item.TotalAmount)} đ</Text>
-            <View style={styles.detailLink}><Text style={styles.detailText}>Xem chi tiết</Text><Ionicons name="chevron-forward" size={17} color={COLORS.primary} /></View>
-          </Pressable>
-        )}
-      />
-      <Pressable style={styles.fab} onPress={() => navigation.navigate('SaleCreateOrder')}>
-        <Ionicons name="add" size={22} color={COLORS.white} /><Text style={styles.fabText}>Tạo đơn mới</Text>
-      </Pressable>
-    </View>
+    <StaffOrderList
+      role="Sale"
+      title="Đơn cần xác nhận"
+      subtitle={`Nhân viên: ${firstName(user?.fullName)}`}
+      filters={[['', 'Tất cả'], ['Pending', 'Chờ xử lý'], ['Confirmed', 'Đã xác nhận']]}
+      createOrder
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.grayLight },
-  title: { fontFamily: FONTS.displayExtraBold, fontSize: 22, color: COLORS.dark, padding: 16, paddingBottom: 0 },
-  sub: { color: COLORS.gray, fontFamily: FONTS.regular, paddingHorizontal: 16, marginTop: 4 },
-  tabs: { flexDirection: 'row', gap: 6, padding: 16 },
-  tab: { paddingHorizontal: 13, paddingVertical: 8, backgroundColor: COLORS.white, borderRadius: 18 },
-  active: { backgroundColor: COLORS.primary },
-  tabText: { color: COLORS.gray, fontFamily: FONTS.medium },
-  activeText: { color: COLORS.white },
-  list: { paddingHorizontal: 16, gap: 10, paddingBottom: 90 },
-  card: { backgroundColor: COLORS.white, borderRadius: 14, padding: 14, gap: 5, ...SHADOWS.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  id: { fontFamily: FONTS.bold, color: COLORS.dark },
-  meta: { fontFamily: FONTS.regular, color: COLORS.gray, fontSize: 12 },
-  name: { fontFamily: FONTS.semiBold, color: COLORS.dark },
-  money: { fontFamily: FONTS.bold, color: COLORS.primary },
-  detailLink: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 3 },
-  detailText: { color: COLORS.primary, fontFamily: FONTS.semiBold },
-  fab: { position: 'absolute', right: 18, bottom: 18, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingHorizontal: 16, height: 52, borderRadius: 26, ...SHADOWS.md },
-  fabText: { color: COLORS.white, fontFamily: FONTS.bold },
-});

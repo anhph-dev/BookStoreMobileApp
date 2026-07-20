@@ -16,6 +16,7 @@ import PickerField from '../../components/common/PickerField';
 import { clearCart, setGuestCart } from '../../store/slices/cartSlice';
 import { logout, updateUser } from '../../store/slices/authSlice';
 import { clearPersistedCart } from '../../services/cartSyncService';
+import { unregisterPushNotifications } from '../../services/notificationService';
 
 const pick = (source, camelKey, pascalKey) => source?.[camelKey] ?? source?.[pascalKey] ?? '';
 
@@ -102,9 +103,15 @@ export default function ProfileScreen() {
       {
         text: 'Đăng xuất',
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
           const userId = auth.user?.userId;
           const isGuestCart = cart.isGuestCart;
+
+          try {
+            await unregisterPushNotifications();
+          } catch (error) {
+            console.warn('Push token cleanup failed', error);
+          }
 
           dispatch(logout());
           dispatch(clearCart());
