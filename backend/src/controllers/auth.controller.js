@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { getPool, sql } = require('../config/db');
+const { sendWelcomeEmail } = require('../services/emailService');
 const { withControllerLog } = require('../utils/controllerLogger');
 
 async function registerHandler(req, res) {
@@ -41,6 +42,9 @@ async function registerHandler(req, res) {
         OUTPUT INSERTED.UserId
         VALUES (@fullName, @email, @hash, 'Customer', @phoneNumber, @address, 0, @cityId, @wardId, GETUTCDATE())
       `);
+
+    // Fire-and-forget: sending email must not delay or fail registration.
+    void sendWelcomeEmail(email, fullName);
 
     return res.status(201).json({ message: 'Đăng ký thành công', userId: result.recordset[0].UserId });
   } catch (error) {
